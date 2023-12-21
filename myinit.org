@@ -315,81 +315,79 @@
 
   #+begin_src emacs-lisp
 
-  (use-package counsel
-    :bind
-    (("M-y" . counsel-yank-pop))
-    :after (ivy amx)
-    :custom
-    (counsel-yank-pop-preselect-last t)
-    (counsel-yank-pop-separator "\n—————————\n")
-    ;; Remove commands that only work with key bindings
-    (put 'counsel-find-symbol 'no-counsel-M-x t)
-    :init
-    (progn
-      (global-set-key (kbd "M-x") 'counsel-M-x)
-      (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-      (global-set-key (kbd "s-f") 'counsel-find-file)
-      (global-set-key (kbd "s-F") 'find-file-other-window)
-      (global-set-key (kbd "C-x b") 'counsel-switch-buffer)
-      (global-set-key (kbd "s-b") 'counsel-switch-buffer)
-      (global-set-key (kbd "C-x B") 'counsel-switch-buffer-other-window)
-      (global-set-key (kbd "s-B") 'counsel-switch-buffer-other-window)
-      (global-set-key (kbd "C-x d") 'counsel-dired)
-      (global-set-key (kbd "s-d") 'counsel-dired)
-      (global-set-key (kbd "s-D") 'dired-other-window)
-      (global-set-key (kbd "C-x C-r") 'counsel-recentf)
-      (global-set-key (kbd "s-r") 'counsel-recentf)
-      (global-set-key (kbd "s-y") 'counsel-yank-pop)
-      (global-set-key (kbd "C-h f") 'counsel-describe-function)
-      (global-set-key (kbd "C-h v") 'counsel-describe-variable)
-      (global-set-key (kbd "C-c h") 'counsel-minibuffer-history)
-      (define-key ivy-minibuffer-map (kbd "s-y") 'ivy-next-line)
-      (define-key ivy-minibuffer-map (kbd "C-SPC") 'ivy-restrict-to-matches))
-    :config
-    (ivy-mode 1))
+    (use-package counsel
+      :bind
+      (("M-y" . counsel-yank-pop))
+      :after (ivy amx)
+      :config
+      (setq counsel-yank-pop-preselect-last t)
+      (setq counsel-yank-pop-separator "\n—————————\n")
+      :init
+      (progn
+	(global-set-key (kbd "M-x") 'counsel-M-x)
+	(global-set-key (kbd "s-F") 'find-file-other-window)
+	(global-set-key (kbd "C-x b") 'counsel-switch-buffer)
+	(global-set-key (kbd "C-x B") 'counsel-switch-buffer-other-window)
+	(global-set-key (kbd "C-x d") 'counsel-dired)
+	(global-set-key (kbd "s-D") 'dired-other-window)
+	(global-set-key (kbd "C-x C-r") 'counsel-recentf)
+	(global-set-key (kbd "C-h f") 'counsel-describe-function)
+	(global-set-key (kbd "C-h v") 'counsel-describe-variable)
+	(global-set-key (kbd "C-c h") 'counsel-minibuffer-history)
+	(define-key ivy-minibuffer-map (kbd "C-SPC") 'ivy-restrict-to-matches)))
 
   #+end_src
+  
 * ivy
 
   #+begin_src emacs-lisp
 
-  (use-package ivy
-    :delight
-    :custom
-    (ivy-count-format "(%d/%d)")
-    (ivy-height-alist '((t lambda (_caller) (/ (window-height) 4))))
-    (ivy-wrap nil)
-    (ivy-re-builders-alist
-     '((counsel-M-x . ivy--regex-fuzzy)
-       (t . ivy-regex-plus)))
-    (ivy-display-style 'fancy)
-    (ivy-set-occur 'ivy-switch-buffer 'ivy-switch-buffer-occur)
-    (ivy-set-occur 'swiper 'swiper-occur)
-    :config
-    (ivy-mode 1)
-    :hook
-    (ivy-occur-mode . hl-line-mode)
-    :bind (("<s-up>" . ivy-push-view)
-	   ("<s-down>" . ivy-switch-view)
-	   :map ivy-occur-mode-map
-	   ("f" . forward-char)
-	   ("b" . backward-char)
-	   ("n" . ivy-occur-next-line)
-	   ("p" . ivy-occur-previous-line)
-	   ("<C-return>" . ivy-occur-press)))
+    (use-package ivy
+      :init
+      (ivy-mode 1) ; Enable Ivy everywhere
+      :bind 
+      (("<s-up>" . ivy-push-view)
+       ("<s-down>" . ivy-switch-view)))
 
   #+end_src
-* ivy rich
+
+* swiper
 
   #+begin_src emacs-lisp
 
-  (use-package ivy-rich
+  (use-package swiper
+    :after ivy
     :config
-    (setcdr (assq t ivy-format-functions-alist)
-	    #'ivy-format-function-line)
-    (ivy-rich-mode 1))
+    (setq swiper-action-recenter t)
+    (setq swiper-goto-start-of-match t)
+    (setq swiper-include-line-number-in-search t)
+    :bind (("C-S-s" . swiper)))
 
   #+end_src
+  
+* ivy-rich
+  #+begin_src emacs-lisp
+
+    (use-package ivy-rich
+      :after ivy
+      :config
+      (ivy-rich-mode 1))
+
+  #+end_src
+
+* amx
+
+  #+begin_src emacs-lisp
+
+    (use-package amx
+      :ensure t
+      :config
+      (setq amx-save-file "~/.emacs.d/amx-items")
+      (setq amx-max-display-length 20)
+      (amx-mode 1))
+
+  #+end_src
+
 * evil
 
   #+begin_src emacs-lisp
