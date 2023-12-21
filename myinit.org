@@ -1,0 +1,426 @@
+#+STARTUP: overview
+#+TITLE: Org emacs init file
+
+* interface
+
+  #+begin_src emacs-lisp
+  
+  (setq inhibit-startup-message t)
+  (scroll-bar-mode -1)        ; Disable visible scrollbar
+  (tool-bar-mode -1)          ; Disable the toolbar
+  (set-fringe-mode 1)         ; Give some breathing room
+
+  #+end_src
+
+* enable winner-mode
+
+  #+begin_src emacs-lisp
+
+  (winner-mode 1)
+
+  #+end_src
+
+* enable wind move
+
+  #+begin_src emacs-lisp
+
+  (when (fboundp 'windmove-default-keybindings)
+    (windmove-default-keybindings))
+
+  #+end_src
+
+* function to kill-buffer and window all together
+
+  #+begin_src emacs-lisp
+
+  (defun kill-buffer-window ()
+    "Kill current buffer and window all together."
+    (interactive)
+    (if (kill-buffer nil)
+	(delete-other-windows)))
+
+  (global-set-key (kbd "s-k") 'kill-buffer-and-window)
+
+  (provide 'kill-buffer-window)
+
+  #+end_src
+* themes
+
+  #+begin_src emacs-lisp
+
+  (use-package modus-themes)
+
+  (load-theme 'modus-vivendi t)
+
+  #+end_src
+
+* eshell
+
+  #+begin_src emacs-lisp
+
+  (use-package eshell-git-prompt
+    :ensure t)
+
+  (use-package eshell
+    :config
+    (eshell-git-prompt-use-theme 'git-radar)
+
+    (defun etbcf/configure-eshell ()
+      ;; Save command history when commands are entered
+      (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+
+      ;; Truncate buffer for performance
+      (when (and (boundp 'eshell-mode-map) eshell-mode-map)
+	(unless (member 'eshell-truncate-buffer eshell-output-filter-functions)
+	  (setq eshell-output-filter-functions
+		(cons 'eshell-truncate-buffer eshell-output-filter-functions))))
+
+      ;; Bind some useful keys for eshell-mode without evil-mode
+      (when (and (boundp 'eshell-mode-map) eshell-mode-map)
+	(define-key eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+	(define-key eshell-mode-map (kbd "<home>") 'eshell-bol))
+
+      (setq eshell-history-size         10000
+	    eshell-buffer-maximum-lines 10000
+	    eshell-hist-ignoredups t
+	    eshell-scroll-to-bottom-on-input t))
+
+    ;; Call the configuration function after 'eshell' is loaded
+    (with-eval-after-load 'esh-mode
+      (etbcf/configure-eshell))
+
+    :hook (eshell-first-time-mode . etbcf/configure-eshell)
+    :config
+    (setq eshell-destroy-buffer-when-process-dies t)
+    (setq eshell-visual-commands '("htop" "zsh" "vim")))
+
+  #+end_src
+
+* vterm
+
+  #+begin_src emacs-lisp
+
+  (use-package vterm
+    :config
+    (setq term-prompt-regexp "^[^#$%>\n]*[#$%>] *")
+    ;; (setq vterm-shell "zsh")
+    (setq vterm-max-scrollback 10000))
+
+
+  (global-set-key (kbd "s-t") 'vterm-other-window) ; open in other window
+
+  #+end_src
+
+* alerts
+
+  #+begin_src emacs-lisp
+
+  (setq ring-bell-function
+	(lambda ()
+	  (play-sound-file "/home/etbcf/Music/beep-alert.wav"))) ; errors
+
+
+
+  (global-set-key (kbd "C-c s t") 'org-timer-set-timer) ; org timer setter
+  (setq org-clock-sound "~/Music/beep_pomodoro.wav") ; finished alert
+
+  #+end_src
+
+* ibuffer
+
+  #+begin_src emacs-lisp
+
+  (global-set-key (kbd "C-x C-b") 'ibuffer)
+
+  (setq ibuffer-saved-filter-groups
+	(quote (("default"
+		 ("text" (mode . text-mode))
+		 ("dired" (mode . dired-mode))
+		 ("org" (name . "^.*org$"))
+
+		 ("web" (or (mode . web-mode) (mode . js2-mode)))
+		 ("shell" (or (mode . eshell-mode) (mode . shell-mode)))
+		 ("mu4e" (name . "\*mu4e\*"))
+		 ("programming" (or
+				 (mode . python-mode)
+				 (mode . c++-mode)
+				 (mode . sh-mode)))
+		 ("emacs" (or
+			   (name . "^\\*scratch\\*$")
+			   (name . "^\\*Messages\\*$")))
+		 ))))
+  (add-hook 'ibuffer-mode-hook
+	    (lambda ()
+	      (ibuffer-auto-mode 1)
+	      (ibuffer-switch-to-saved-filter-groups "default")))
+
+  #+end_src
+
+* multiple-cursors
+
+  #+begin_src emacs-lisp
+
+  (use-package multiple-cursors
+    :bind (("C->" . mc/mark-next-like-this)
+	   ("C-<" . mc/mark-previous-like-this)
+	   ("C-x C->" . mc/mark-next-like-this-word)
+	   ("C-x C-<" . mc/mark-previous-like-this-word)
+	   ("C-c S-n" . mc/insert-numbers)))
+
+  #+end_src
+
+* magit
+
+  #+begin_src emacs-lisp
+
+  (use-package magit
+    :custom
+    (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+  #+end_src
+* yasnippet
+
+  #+begin_src emacs-lisp
+
+  (use-package yasnippet-snippets
+    :init
+    (yas-global-mode 1))
+
+
+  (use-package auto-yasnippet)
+
+  #+end_src
+
+* lsp
+
+  #+begin_src emacs-lisp
+
+  (use-package lsp-mode)
+
+
+  (use-package lsp-pyright
+    :ensure t
+    :hook (python-mode . (lambda ()
+			   (require 'lsp-pyright)
+			   (lsp))))  ; or lsp-deferred
+
+
+  (use-package lsp-mode
+    :commands lsp
+    :hook
+    (sh-mode . lsp))
+
+  #+end_src
+
+* flycheck
+
+  #+begin_src emacs-lisp
+
+  (use-package flycheck
+    :init
+    (global-flycheck-mode t))
+
+  #+end_src
+
+* completion
+
+  #+begin_src emacs-lisp
+
+  (use-package auto-complete
+    :init
+    (progn
+     (ac-config-default)
+      (global-auto-complete-mode t)
+      ))
+
+  #+end_src
+
+* line numbers
+
+  #+begin_src emacs-lisp
+
+  (column-number-mode)
+  (global-display-line-numbers-mode t)
+
+
+  (dolist (mode '(org-mode-hook
+		  term-mode-hook
+		  eshell-mode-hook
+		  text-mode-hook
+		  vterm-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+  #+end_src
+
+* enable the sudo package
+
+  #+begin_src emacs-lisp
+
+  (defun sudo-edit ()
+    "Edit the current file with sudo privileges."
+    (interactive)
+    (when buffer-file-name
+      (find-alternate-file (concat "/sudo::" buffer-file-name))))
+
+
+  (global-set-key (kbd "C-c C-r") 'sudo-edit)
+
+  #+end_src
+
+* short prompt
+
+#+begin_src emacs-lisp
+
+  (fset 'yes-or-no-p 'y-or-n-p)
+
+#+end_src
+* history, locations, custom, refresh, recently
+
+  #+begin_src emacs-lisp
+  
+  (setq history-length 25)
+  (savehist-mode 1)
+
+
+  (save-place-mode 1)
+
+
+  (setq custom-file (locate-user-emacs-file "custom-vars.el"))
+  (load custom-file 'noerror 'message)
+
+
+  (global-auto-revert-mode 1)
+  (setq global-auto-revert-non-file-buffers t)
+
+
+  (recentf-mode 1)
+
+  #+end_src
+* clean folders
+
+  #+begin_src emacs-lisp
+
+  ;; Save the backup files in tmp/backup directory
+  (setq backup-directory-alist `(("." . ,(expand-file-name "tmp/backups/" user-emacs-directory))))
+
+  ;; auto-save-mode doesn't create the path automatically
+  (make-directory (expand-file-name "tmp/auto-saves/" user-emacs-directory) t)
+
+  (setq auto-save-list-file-prefix (expand-file-name "tmp/auto-saves/sessions/" user-emacs-directory)
+	auto-save-file-name-transforms `((".*" ,(expand-file-name "tmp/auto-saves/" user-emacs-directory) t)))
+
+  #+end_src
+
+* counsel
+
+  #+begin_src emacs-lisp
+
+  (use-package counsel
+    :bind
+    (("M-y" . counsel-yank-pop))
+    :after (ivy amx)
+    :custom
+    (counsel-yank-pop-preselect-last t)
+    (counsel-yank-pop-separator "\n—————————\n")
+    ;; Remove commands that only work with key bindings
+    (put 'counsel-find-symbol 'no-counsel-M-x t)
+    :init
+    (progn
+      (global-set-key (kbd "M-x") 'counsel-M-x)
+      (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+      (global-set-key (kbd "s-f") 'counsel-find-file)
+      (global-set-key (kbd "s-F") 'find-file-other-window)
+      (global-set-key (kbd "C-x b") 'counsel-switch-buffer)
+      (global-set-key (kbd "s-b") 'counsel-switch-buffer)
+      (global-set-key (kbd "C-x B") 'counsel-switch-buffer-other-window)
+      (global-set-key (kbd "s-B") 'counsel-switch-buffer-other-window)
+      (global-set-key (kbd "C-x d") 'counsel-dired)
+      (global-set-key (kbd "s-d") 'counsel-dired)
+      (global-set-key (kbd "s-D") 'dired-other-window)
+      (global-set-key (kbd "C-x C-r") 'counsel-recentf)
+      (global-set-key (kbd "s-r") 'counsel-recentf)
+      (global-set-key (kbd "s-y") 'counsel-yank-pop)
+      (global-set-key (kbd "C-h f") 'counsel-describe-function)
+      (global-set-key (kbd "C-h v") 'counsel-describe-variable)
+      (global-set-key (kbd "C-c h") 'counsel-minibuffer-history)
+      (define-key ivy-minibuffer-map (kbd "s-y") 'ivy-next-line)
+      (define-key ivy-minibuffer-map (kbd "C-SPC") 'ivy-restrict-to-matches))
+    :config
+    (ivy-mode 1))
+
+  #+end_src
+* ivy
+
+  #+begin_src emacs-lisp
+
+  (use-package ivy
+    :delight
+    :custom
+    (ivy-count-format "(%d/%d)")
+    (ivy-height-alist '((t lambda (_caller) (/ (window-height) 4))))
+    (ivy-wrap nil)
+    (ivy-re-builders-alist
+     '((counsel-M-x . ivy--regex-fuzzy)
+       (t . ivy-regex-plus)))
+    (ivy-display-style 'fancy)
+    (ivy-set-occur 'ivy-switch-buffer 'ivy-switch-buffer-occur)
+    (ivy-set-occur 'swiper 'swiper-occur)
+    :config
+    (ivy-mode 1)
+    :hook
+    (ivy-occur-mode . hl-line-mode)
+    :bind (("<s-up>" . ivy-push-view)
+	   ("<s-down>" . ivy-switch-view)
+	   :map ivy-occur-mode-map
+	   ("f" . forward-char)
+	   ("b" . backward-char)
+	   ("n" . ivy-occur-next-line)
+	   ("p" . ivy-occur-previous-line)
+	   ("<C-return>" . ivy-occur-press)))
+
+  #+end_src
+* ivy rich
+
+  #+begin_src emacs-lisp
+
+  (use-package ivy-rich
+    :config
+    (setcdr (assq t ivy-format-functions-alist)
+	    #'ivy-format-function-line)
+    (ivy-rich-mode 1))
+
+  #+end_src
+* evil
+
+  #+begin_src emacs-lisp
+
+  (use-package evil
+    :init
+    (setq evil-want-integration t)
+    (setq evil-want-keybinding nil)
+    (setq evil-want-C-u-scroll t)
+    (setq evil-want-C-i-jump nil)
+    :config
+    (evil-mode 1)
+    (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+    (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+
+    ;; Use visual line motions even outside of visual-line-mode buffers
+    (evil-global-set-key 'motion "j" 'evil-next-visual-line)
+    (evil-global-set-key 'motion "k" 'evil-previous-visual-line)
+
+    (evil-set-initial-state 'messages-buffer-mode 'normal)
+    (evil-set-initial-state 'dashboard-mode 'normal))
+
+  #+end_src
+
+* evil-collection
+
+#+begin_src emacs-lisp
+
+  (use-package evil-collection
+    :after evil
+    :config
+    (evil-collection-init))
+
+#+end_src
